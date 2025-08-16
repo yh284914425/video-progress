@@ -19,7 +19,7 @@ import tempfile
 
 # moviepy作为可选依赖
 try:
-    from moviepy.editor import VideoFileClip, ImageSequenceClip
+    from moviepy import VideoFileClip, ImageSequenceClip
     MOVIEPY_AVAILABLE = True
 except ImportError:
     MOVIEPY_AVAILABLE = False
@@ -512,8 +512,13 @@ class FlexibleProgressBar:
             def process_frame(get_frame, t):
                 """处理单个帧的函数"""
                 frame = get_frame(t)
-                # moviepy使用RGB，转换为BGR给OpenCV
-                frame_bgr = cv2.cvtColor((frame * 255).astype(np.uint8), cv2.COLOR_RGB2BGR)
+                # MoviePy 2.x 直接返回uint8格式(0-255)，无需乘以255
+                if frame.dtype == np.float64 or frame.dtype == np.float32:
+                    # 如果是浮点数(0-1)，转换为uint8
+                    frame_bgr = cv2.cvtColor((frame * 255).astype(np.uint8), cv2.COLOR_RGB2BGR)
+                else:
+                    # 如果已经是uint8(0-255)，直接转换
+                    frame_bgr = cv2.cvtColor(frame.astype(np.uint8), cv2.COLOR_RGB2BGR)
                 
                 # 计算进度
                 progress = t / duration if duration > 0 else 0
@@ -521,26 +526,29 @@ class FlexibleProgressBar:
                 # 添加进度条
                 frame_with_progress = self._draw_progress_bar(frame_bgr, progress, width, height)
                 
-                # 转换回RGB给moviepy
+                # 转换回RGB给moviepy，MoviePy 2.x 期望uint8格式
                 frame_rgb = cv2.cvtColor(frame_with_progress, cv2.COLOR_BGR2RGB)
-                return frame_rgb.astype(np.float32) / 255.0
+                return frame_rgb.astype(np.uint8)
             
-            # 创建新的视频剪辑，应用进度条处理
-            processed_clip = video_clip.fl(process_frame)
+            # 创建新的视频剪辑，应用进度条处理 (MoviePy 2.x API)
+            processed_clip = video_clip.transform(process_frame)
             
-            # 保留原始音频
+            # 保留原始音频 (MoviePy 2.x API)
             if video_clip.audio:
-                processed_clip = processed_clip.set_audio(video_clip.audio)
+                processed_clip = processed_clip.with_audio(video_clip.audio)
                 print("🔊 保留原始音频")
             
             print("💾 正在写入最终视频...")
             
-            # 写入视频（自动选择最佳编码器）
+            # 写入视频，并指定高质量参数 (MoviePy 2.x API)
             processed_clip.write_videofile(
                 output_video,
                 fps=fps,
-                verbose=False,  # 减少输出信息
-                logger=None     # 抑制moviepy日志
+                codec='libx264',      # 使用高质量和兼容性好的H.264编码器
+                bitrate='10000k',     # 设置一个较高的码率 (例如 10000 kbps)。原视频码率越高，这里可以设得越高。
+                preset='medium',      # 'slow'或'veryslow'可以获得更高压缩率（同等码率下质量更好），但耗时更长。'medium'是很好的平衡点。
+                threads=4,            # 使用多个CPU核心来加速编码
+                logger=None           # MoviePy 2.x: 使用logger代替verbose参数
             )
             
             # 清理资源
@@ -692,10 +700,21 @@ def main():
         save_default_config(args.save_config)
         return 0
     
-    # 加载配置
+    # --- 配置加载逻辑 ---
+    config_path = args.config
+    
+    # 如果用户未指定配置文件，则尝试加载默认的 config.json
+    if not config_path and os.path.exists('config.json'):
+        print("💡 未指定配置文件，自动加载 'config.json'")
+        config_path = 'config.json'
+
     config = {}
-    if args.config:
-        config = load_config(args.config)
+    if config_path:
+        if os.path.exists(config_path):
+            config = load_config(config_path)
+        else:
+            # 如果用户指定了但文件不存在，给出错误提示
+            print(f"⚠️  警告: 指定的配置文件 '{config_path}' 不存在，将使用代码内置默认值。")
     
     # 确定输入视频路径
     input_video = args.input_video
