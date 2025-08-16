@@ -1,0 +1,59 @@
+{
+  "input_video": "assets/samples/sample_video.mp4",
+  "output_video": "",
+  "bar_height": 40,
+  "bar_color": [
+    255,
+    165,
+    0
+  ],
+  "background_color": [
+    50,
+    50,
+    50
+  ],
+  "position": "bottom",
+  "margin": 25,
+  "character_path": "assets/characters/panda_running.gif",
+  "character_size": [
+    80,
+    80
+  ],
+  "character_offset_x": 0,
+  "character_offset_y": -5,
+  "enable_bounce": true,
+  "bounce_amplitude": 8,
+  "bounce_speed": 0.2,
+  "animation_speed": 3,
+  "enable_lightning": true,
+  "lightning_chance": 0.3,
+  "lightning_color": [
+    0,
+    255,
+    255
+  ],
+  "enable_particles": true,
+  "particle_color": [
+    0,
+    255,
+    255
+  ],
+  "particle_lifetime": 60,
+  "text_color": [
+    0,
+    255,
+    255
+  ],
+  "text_size": 0.8,
+  "text_position": "right",
+  "text_offset_x": 15,
+  "text_offset_y": 0,
+  "border_thickness": 3,
+  "border_color": [
+    255,
+    255,
+    255
+  ],
+  "gradient_enabled": true,
+  "glow_enabled": true
+}
