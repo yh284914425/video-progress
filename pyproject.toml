@@ -1,12 +1,50 @@
 [project]
-name = "video-cut"
-version = "0.1.0"
-description = "Video progress bar overlay tool"
+name = "video-progress-pkg"
+version = "1.0.0"
+description = "Flexible video progress bar overlay tool with animated characters"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.9"
+authors = [
+    {name = "AI Assistant"}
+]
+license = "MIT"
+keywords = ["video", "progress", "overlay", "animation", "gif"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "opencv-python>=4.8.0",
-    "moviepy>=2.1.0",
     "pillow>=10.0.0",
-    "numpy>=1.24.0",
+    "numpy>=1.21.0,<2.0.0",
 ]
+
+[project.optional-dependencies]
+# moviepy是可选依赖，用于音频处理
+audio = ["moviepy>=2.1.0"]
+# 完整安装包含所有功能
+full = ["moviepy>=2.1.0"]
+
+[project.urls]
+Homepage = "https://github.com/your-username/video-progress-pkg"
+Documentation = "https://github.com/your-username/video-progress-pkg#readme"
+Repository = "https://github.com/your-username/video-progress-pkg.git"
+Issues = "https://github.com/your-username/video-progress-pkg/issues"
+
+[project.scripts]
+# CLI入口点
+video-progress = "video_progress_pkg.cli:main"
+
+[tool.setuptools.packages.find]
+# 明确指定包发现规则
+include = ["video_progress_pkg*"]
+exclude = ["assets*", "output*"]

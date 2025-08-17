@@ -14,51 +14,78 @@
 ## 📁 项目结构
 
 ```
-video_cut/
-├── video_progress.py         # 主程序
-├── config.json              # 配置文件
-├── assets/                  # 素材
-│   ├── characters/         # 角色GIF
-│   │   ├── pikaqiu.gif
-│   │   └── panda_running.gif
-│   └── samples/           # 示例视频
-│       └── sample_video.mp4
-└── output/                # 输出目录
-    └── videos/           # 生成的视频
+video-progress/
+├── video_progress_pkg/      # 📦 Python包
+│   ├── __init__.py         # 包接口
+│   ├── core.py            # 核心功能
+│   └── cli.py             # 命令行接口
+├── configs/                # 🔧 配置文件（2个预设）
+│   ├── default.json       # 默认配置
+│   └── fancy.json         # 华丽效果
+├── examples/               # 📝 使用示例
+│   └── demo_usage.py      # 完整演示
+├── assets/                 # 🎨 素材资源
+│   ├── characters/        # 角色GIF
+│   └── samples/          # 示例视频
+├── output/                 # 📤 输出目录
+├── pyproject.toml         # 包配置
+└── README.md              # 完整文档
 ```
 
-## 🚀 快速使用
+## 🚀 快速开始
 
-### 1. 安装依赖
+### 1. 安装项目
 ```bash
-uv sync
+# 安装包（开发模式）
+uv pip install -e .
+
+# 或完整安装（包含音频支持）
+uv pip install -e .[full]
 ```
 
-### 2. 基本使用
+### 2. 快速测试
 ```bash
-# 使用默认皮卡丘
-python video_progress.py assets/samples/sample_video.mp4
-
-# 使用熊猫角色
-python video_progress.py video.mp4 --character assets/characters/panda_running.gif
-
-# 调整角色大小
-python video_progress.py video.mp4 --size 80 80
-
-# 调整角色位置
-python video_progress.py video.mp4 --offset 10 -20
+# 运行完整演示
+uv run python examples/demo_usage.py
 ```
 
-### 3. 配置文件使用
+### 3. 两种使用方式
+
+#### 方式1：Python包API（推荐）
+```python
+from video_progress_pkg import VideoProgressBar
+
+# 基本使用
+processor = VideoProgressBar()
+output_path = processor.process_video("your_video.mp4")
+
+# 使用预设配置
+from video_progress_pkg import load_config
+config = load_config("configs/fancy.json")
+config["input_video"] = "your_video.mp4"
+processor = VideoProgressBar(config)
+output_path = processor.process_video(config["input_video"])
+```
+
+#### 方式2：命令行使用
 ```bash
-# 生成默认配置（包含输入视频路径）
-python video_progress.py --save-config my_config.json
+# 使用默认配置
+video-progress your_video.mp4
 
-# 使用配置文件（无需指定视频路径）
-python video_progress.py --config my_config.json
+# 使用预设配置文件
+video-progress --config configs/fancy.json
 
-# 配置文件 + 参数覆盖
-python video_progress.py --config my_config.json --size 100 100
+# 自定义参数
+video-progress video.mp4 --character assets/characters/panda_running.gif --size 80 80
+```
+
+### 4. 两种预设风格
+```bash
+# 默认风格（平衡效果，适合大多数场景）
+video-progress --config configs/default.json
+
+# 华丽风格（丰富特效，适合娱乐视频）
+video-progress --config configs/fancy.json
 ```
 
 ## ⚙️ 灵活配置
@@ -71,7 +98,11 @@ python video_progress.py --config my_config.json --size 100 100
 - `--offset X Y` 角色偏移（X Y像素）
 - `--no-effects` 禁用所有特效
 
-### 配置文件参数（config.json）
+### 配置文件说明
+
+现有两个预设配置：
+- **default.json** - 默认配置，青色主题，适中特效  
+- **fancy.json** - 华丽风格，橙色主题，丰富特效
 
 ```json
 {
@@ -146,19 +177,15 @@ python video_progress.py video.mp4 \
 
 ### 示例3: 使用配置文件
 ```bash
-# 1. 生成配置模板
-python video_progress.py --save-config blue_theme.json
+# 1. 使用预设配置
+video-progress --config configs/fancy.json
 
-# 2. 编辑配置文件 (修改视频路径、颜色、大小等)
-# {
-#   "input_video": "my_video.mp4",
-#   "character_path": "assets/characters/panda_running.gif",
-#   "bar_color": [255, 0, 0],
-#   ...
-# }
+# 2. 或者复制并修改配置文件
+cp configs/default.json configs/my_theme.json
+# 编辑 my_theme.json 修改颜色、大小等
 
-# 3. 使用配置（无需指定视频）
-python video_progress.py --config blue_theme.json
+# 3. 使用自定义配置
+video-progress --config configs/my_theme.json
 ```
 
 ## 🔧 高级定制
@@ -204,6 +231,143 @@ python video_progress.py --config blue_theme.json
 **特效太多**：使用 `--no-effects` 或在配置中关闭
 **VSCode无法预览生成的视频**：已优化编码器选择，应该可以正常预览
 **生成的视频没有声音**：需要安装moviepy (`uv add moviepy`)，否则使用无音频模式
+
+## 🔗 在其他项目中使用
+
+### 📦 三种使用方式
+
+#### 方法1：pip安装（推荐）
+```bash
+# 先在video-progress目录安装
+cd /path/to/video-progress
+pip install -e .
+
+# 然后在任何项目中都能导入
+cd /path/to/your/other/project
+python -c "from video_progress_pkg import VideoProgressBar; print('✅ 可以使用了')"
+```
+
+#### 方法2：复制包文件夹
+```bash
+# 复制整个包到您的项目
+cp -r /path/to/video-progress/video_progress_pkg /path/to/your/project/
+
+# 安装依赖
+pip install opencv-python pillow numpy moviepy
+
+# 在您的项目中使用
+from video_progress_pkg import VideoProgressBar
+```
+
+#### 方法3：Python路径导入
+```python
+# 在您的代码开头添加
+import sys
+sys.path.append('/path/to/video-progress')  # 修改为实际路径
+from video_progress_pkg import VideoProgressBar
+
+# 然后正常使用
+processor = VideoProgressBar()
+processor.process_video("video.mp4")
+```
+
+> **注意**：方法1安装一次后全局可用；方法2需要复制文件；方法3每次都要添加路径。
+
+### Python API集成
+
+```python
+from video_progress_pkg import VideoProgressBar, load_config
+
+def your_video_workflow():
+    # 第一步：您的视频生成逻辑
+    generated_video = your_video_generation_function()
+    
+    # 第二步：添加进度条
+    config = load_config("configs/fancy.json")
+    config["input_video"] = generated_video
+    
+    processor = VideoProgressBar(config)
+    final_video = processor.process_video(
+        input_video=generated_video,
+        output_video="final_with_progress.mp4"
+    )
+    
+    return final_video
+```
+
+### 自定义配置示例
+
+```python
+# 完全自定义的配置
+custom_config = {
+    "bar_color": [255, 0, 0],  # 红色进度条 (BGR格式)
+    "character_size": [80, 80],  # 更大的角色
+    "position": "top",  # 顶部位置
+    "enable_bounce": True,
+    "enable_lightning": True,
+    "text_color": [255, 255, 255],  # 白色文字
+    "text_position": "follow"
+}
+
+processor = VideoProgressBar(custom_config)
+output = processor.process_video("input.mp4", "output.mp4")
+```
+
+### 完整的跨项目使用示例
+
+假设您在 `/Users/sheng/Desktop/my-video-app/` 有一个视频项目：
+
+```python
+# /Users/sheng/Desktop/my-video-app/main.py
+
+# 方法1：如果已经pip install -e安装
+from video_progress_pkg import VideoProgressBar, load_config
+
+# 方法3：如果使用路径导入
+# import sys
+# sys.path.append('/Users/sheng/Desktop/code/video-progress')
+# from video_progress_pkg import VideoProgressBar, load_config
+
+def my_video_workflow():
+    """您的视频处理工作流"""
+    
+    # 第一步：您的视频生成逻辑
+    input_video = "my_generated_video.mp4"  # 您的视频
+    
+    # 第二步：添加进度条（使用默认配置）
+    processor = VideoProgressBar()
+    output_video = processor.process_video(input_video)
+    print(f"✅ 进度条已添加: {output_video}")
+    
+    # 或者使用预设配置
+    # config = load_config("/Users/sheng/Desktop/code/video-progress/configs/fancy.json")
+    # config["input_video"] = input_video
+    # processor = VideoProgressBar(config)
+    # output_video = processor.process_video(input_video, "final_video.mp4")
+    
+    return output_video
+
+def batch_process_videos(input_folder, output_folder):
+    """批量处理示例"""
+    processor = VideoProgressBar({
+        "bar_color": [255, 0, 0],  # 红色进度条
+        "enable_bounce": True
+    })
+    
+    for filename in os.listdir(input_folder):
+        if filename.endswith(('.mp4', '.avi', '.mov')):
+            input_path = os.path.join(input_folder, filename)
+            output_path = os.path.join(output_folder, f"progress_{filename}")
+            
+            try:
+                processor.process_video(input_path, output_path)
+                print(f"✅ 处理完成: {filename}")
+            except Exception as e:
+                print(f"❌ 处理失败 {filename}: {e}")
+
+if __name__ == "__main__":
+    my_video_workflow()
+```
 
 ---
 
