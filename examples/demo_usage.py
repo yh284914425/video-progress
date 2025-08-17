@@ -3,17 +3,32 @@
 演示如何在其他项目中使用 video-progress-pkg 包
 """
 
-from video_progress_pkg import VideoProgressBar, save_default_config
+from video_progress_pkg import VideoProgressBar, save_default_config, load_config
 import os
+
+def check_sample_video():
+    """检查示例视频是否存在"""
+    try:
+        # 使用标准的importlib.resources方式
+        from importlib.resources import files
+        resource_path = files('video_progress_pkg').joinpath(
+            'assets', 'samples', 'KRITIKAQUEEN2-1956650788194783326-01.mp4')
+        if resource_path.is_file():
+            return str(resource_path)
+    except (ImportError, AttributeError, FileNotFoundError):
+        pass
+    
+    print(f"❌ 示例视频不存在，请确保有可用的视频文件")
+    print("💡 请将您的视频文件放在 video_progress_pkg/assets/samples/ 目录")
+    return None
 
 def demo_basic_usage():
     """演示基本使用方法"""
     print("🎯 演示1: 基本使用")
     
     # 检查是否有示例视频
-    sample_video = "assets/samples/KRITIKAQUEEN2-1956650788194783326-01.mp4"
-    if not os.path.exists(sample_video):
-        print(f"❌ 示例视频不存在: {sample_video}")
+    sample_video = check_sample_video()
+    if not sample_video:
         return
     
     # 最简单的使用方式
@@ -29,9 +44,8 @@ def demo_custom_config():
     """演示自定义配置"""
     print("\n🎨 演示2: 自定义配置")
     
-    sample_video = "assets/samples/KRITIKAQUEEN2-1956650788194783326-01.mp4"
-    if not os.path.exists(sample_video):
-        print(f"❌ 示例视频不存在: {sample_video}")
+    sample_video = check_sample_video()
+    if not sample_video:
         return
     
     # 自定义配置
@@ -64,9 +78,8 @@ def demo_config_file():
     """演示使用预设配置文件"""
     print("\n📄 演示3: 使用预设配置")
     
-    sample_video = "assets/samples/KRITIKAQUEEN2-1956650788194783326-01.mp4"
-    if not os.path.exists(sample_video):
-        print(f"❌ 示例视频不存在: {sample_video}")
+    sample_video = check_sample_video()
+    if not sample_video:
         return
     
     # 测试不同的预设配置

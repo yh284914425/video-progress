@@ -65,8 +65,13 @@ def main():
         if os.path.exists(config_path):
             config = load_config(config_path)
         else:
-            # 如果用户指定了但文件不存在，给出错误提示
-            print(f"⚠️  警告: 指定的配置文件 '{config_path}' 不存在，将使用代码内置默认值。")
+            # 如果用户明确指定了配置文件但文件不存在，应该报错退出
+            if args.config:  # 用户通过--config明确指定的
+                print(f"❌ 错误: 指定的配置文件 '{config_path}' 不存在")
+                return 1
+            else:
+                # 只有自动查找默认config.json时才给警告
+                print(f"⚠️  警告: 默认配置文件 '{config_path}' 不存在，将使用内置默认值。")
     
     # 确定输入视频路径
     input_video = args.input_video

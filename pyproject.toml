@@ -24,14 +24,15 @@ classifiers = [
 ]
 dependencies = [
     "opencv-python>=4.8.0",
-    "pillow>=10.0.0",
+    "pillow>=10.0.0", 
     "numpy>=1.21.0,<2.0.0",
+    "importlib-resources>=1.3.0; python_version<'3.9'",
 ]
 
 [project.optional-dependencies]
 # moviepy是可选依赖，用于音频处理
 audio = ["moviepy>=2.1.0"]
-# 完整安装包含所有功能
+# 完整安装包含所有功能  
 full = ["moviepy>=2.1.0"]
 
 [project.urls]
@@ -47,4 +48,8 @@ video-progress = "video_progress_pkg.cli:main"
 [tool.setuptools.packages.find]
 # 明确指定包发现规则
 include = ["video_progress_pkg*"]
-exclude = ["assets*", "output*"]
+exclude = ["output*"]
+
+[tool.setuptools.package-data]
+# 包含包内的资源文件
+"video_progress_pkg" = ["assets/**/*"]

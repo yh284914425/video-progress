@@ -18,15 +18,15 @@ video-progress/
 ├── video_progress_pkg/      # 📦 Python包
 │   ├── __init__.py         # 包接口
 │   ├── core.py            # 核心功能
-│   └── cli.py             # 命令行接口
+│   ├── cli.py             # 命令行接口
+│   └── assets/            # 📦 包内资源
+│       ├── characters/    # 角色GIF
+│       └── samples/      # 示例视频
 ├── configs/                # 🔧 配置文件（2个预设）
 │   ├── default.json       # 默认配置
 │   └── fancy.json         # 华丽效果
 ├── examples/               # 📝 使用示例
 │   └── demo_usage.py      # 完整演示
-├── assets/                 # 🎨 素材资源
-│   ├── characters/        # 角色GIF
-│   └── samples/          # 示例视频
 ├── output/                 # 📤 输出目录
 ├── pyproject.toml         # 包配置
 └── README.md              # 完整文档
@@ -234,140 +234,81 @@ video-progress --config configs/my_theme.json
 
 ## 🔗 在其他项目中使用
 
-### 📦 三种使用方式
+要在你的另一个项目中使用 `video-progress-pkg`，推荐遵循标准的 Python 开发流程，即为新项目创建独立的虚拟环境。
 
-#### 方法1：pip安装（推荐）
+**强烈不推荐**直接复制文件夹或使用 `sys.path`，这两种方法都容易出错且难以维护。
+
+下面是标准的使用步骤：
+
+### 第一步：为你的新项目创建并激活虚拟环境
+
+假设你的新项目位于 `/path/to/your/other/project`。
+
 ```bash
-# 先在video-progress目录安装
-cd /path/to/video-progress
-pip install -e .
-
-# 然后在任何项目中都能导入
+# 1. 进入你的新项目目录
 cd /path/to/your/other/project
-python -c "from video_progress_pkg import VideoProgressBar; print('✅ 可以使用了')"
-```
 
-#### 方法2：复制包文件夹
+# 2. 创建一个虚拟环境 (通常命名为 .venv)
+python3 -m venv .venv
+
+# 3. 激活虚拟环境
+# 在 macOS / Linux 上:
+source .venv/bin/activate
+# 在 Windows 上，使用: .venv\Scripts\activate
+```
+> 激活后，你的终端提示符前会出现 `(.venv)` 字样。
+
+### 第二步：安装 `video-progress-pkg`
+
+在**已激活虚拟环境**的终端中，使用 `pip` 从本地路径安装 `video-progress-pkg`。
+
+推荐使用“可编辑模式” (`-e`) 进行安装，这样你在 `video-progress-pkg` 源码中所做的任何修改，都会立刻在新项目中生效，无需重装。
+
 ```bash
-# 复制整个包到您的项目
-cp -r /path/to/video-progress/video_progress_pkg /path/to/your/project/
+# -e 表示 "editable" (可编辑)
+# /Users/sheng/Desktop/code/video-progress 是你这个包的存放路径
+pip install -e /Users/sheng/Desktop/code/video-progress
 
-# 安装依赖
-pip install opencv-python pillow numpy moviepy
+# 如果需要包含音频处理功能，可以安装可选依赖
+pip install -e /Users/sheng/Desktop/code/video-progress[audio]
+```
 
-# 在您的项目中使用
+### 第三步：在新项目代码中使用
+
+现在，你可以在新项目的 Python 文件中，像使用任何其他库一样导入并使用它。
+
+**示例 (`/path/to/your/other/project/main.py`):**
+
+```python
 from video_progress_pkg import VideoProgressBar
+import os
+
+# 你的视频文件路径
+video_file = "path/to/some/video.mp4" 
+output_dir = "output_videos"
+os.makedirs(output_dir, exist_ok=True)
+
+if not os.path.exists(video_file):
+    print(f"错误：找不到视频文件 {video_file}")
+else:
+    print("🚀 开始处理视频...")
+    try:
+        # 初始化处理器
+        processor = VideoProgressBar()
+
+        # 定义输出路径
+        output_path = os.path.join(output_dir, "processed_video.mp4")
+
+        # 添加进度条
+        final_video = processor.process_video(video_file, output_path)
+        
+        print(f"🎉 视频处理完成！文件保存在: {final_video}")
+
+    except Exception as e:
+        print(f"❌ 处理过程中发生错误: {e}")
 ```
 
-#### 方法3：Python路径导入
-```python
-# 在您的代码开头添加
-import sys
-sys.path.append('/path/to/video-progress')  # 修改为实际路径
-from video_progress_pkg import VideoProgressBar
-
-# 然后正常使用
-processor = VideoProgressBar()
-processor.process_video("video.mp4")
-```
-
-> **注意**：方法1安装一次后全局可用；方法2需要复制文件；方法3每次都要添加路径。
-
-### Python API集成
-
-```python
-from video_progress_pkg import VideoProgressBar, load_config
-
-def your_video_workflow():
-    # 第一步：您的视频生成逻辑
-    generated_video = your_video_generation_function()
-    
-    # 第二步：添加进度条
-    config = load_config("configs/fancy.json")
-    config["input_video"] = generated_video
-    
-    processor = VideoProgressBar(config)
-    final_video = processor.process_video(
-        input_video=generated_video,
-        output_video="final_with_progress.mp4"
-    )
-    
-    return final_video
-```
-
-### 自定义配置示例
-
-```python
-# 完全自定义的配置
-custom_config = {
-    "bar_color": [255, 0, 0],  # 红色进度条 (BGR格式)
-    "character_size": [80, 80],  # 更大的角色
-    "position": "top",  # 顶部位置
-    "enable_bounce": True,
-    "enable_lightning": True,
-    "text_color": [255, 255, 255],  # 白色文字
-    "text_position": "follow"
-}
-
-processor = VideoProgressBar(custom_config)
-output = processor.process_video("input.mp4", "output.mp4")
-```
-
-### 完整的跨项目使用示例
-
-假设您在 `/Users/sheng/Desktop/my-video-app/` 有一个视频项目：
-
-```python
-# /Users/sheng/Desktop/my-video-app/main.py
-
-# 方法1：如果已经pip install -e安装
-from video_progress_pkg import VideoProgressBar, load_config
-
-# 方法3：如果使用路径导入
-# import sys
-# sys.path.append('/Users/sheng/Desktop/code/video-progress')
-# from video_progress_pkg import VideoProgressBar, load_config
-
-def my_video_workflow():
-    """您的视频处理工作流"""
-    
-    # 第一步：您的视频生成逻辑
-    input_video = "my_generated_video.mp4"  # 您的视频
-    
-    # 第二步：添加进度条（使用默认配置）
-    processor = VideoProgressBar()
-    output_video = processor.process_video(input_video)
-    print(f"✅ 进度条已添加: {output_video}")
-    
-    # 或者使用预设配置
-    # config = load_config("/Users/sheng/Desktop/code/video-progress/configs/fancy.json")
-    # config["input_video"] = input_video
-    # processor = VideoProgressBar(config)
-    # output_video = processor.process_video(input_video, "final_video.mp4")
-    
-    return output_video
-
-def batch_process_videos(input_folder, output_folder):
-    """批量处理示例"""
-    processor = VideoProgressBar({
-        "bar_color": [255, 0, 0],  # 红色进度条
-        "enable_bounce": True
-    })
-    
-    for filename in os.listdir(input_folder):
-        if filename.endswith(('.mp4', '.avi', '.mov')):
-            input_path = os.path.join(input_folder, filename)
-            output_path = os.path.join(output_folder, f"progress_{filename}")
-            
-            try:
-                processor.process_video(input_path, output_path)
-                print(f"✅ 处理完成: {filename}")
-            except Exception as e:
-                print(f"❌ 处理失败 {filename}: {e}")
-
-if __name__ == "__main__":
-    my_video_workflow()
-```
+这个流程确保了你的项目依赖清晰、环境隔离，是 Python 开发的最佳实践。
 
 ---
 

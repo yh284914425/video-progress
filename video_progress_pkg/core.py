@@ -16,6 +16,13 @@ from typing import Tuple, Optional, List, Dict, Any
 from PIL import Image, ImageSequence
 import tempfile
 
+# 用于资源文件路径处理
+try:
+    from importlib.resources import files
+except ImportError:
+    # Python < 3.9 fallback
+    from importlib_resources import files
+
 # moviepy作为可选依赖
 try:
     from moviepy import VideoFileClip, ImageSequenceClip
@@ -90,20 +97,17 @@ class VideoProgressBar:
         self.trail_particles = []
 
     def _get_default_character_path(self) -> str:
-        """获取默认角色路径，优先使用包外的assets目录"""
-        # 优先查找包外的assets目录（向后兼容）
-        external_path = os.path.join(os.getcwd(), 'assets', 'characters', 'pikaqiu.gif')
-        if os.path.exists(external_path):
-            return external_path
-        
-        # 其次查找相对于包的assets目录
-        pkg_dir = os.path.dirname(os.path.dirname(__file__))
-        pkg_assets_path = os.path.join(pkg_dir, 'assets', 'characters', 'pikaqiu.gif')
-        if os.path.exists(pkg_assets_path):
-            return pkg_assets_path
-            
-        # 最后返回相对路径（让用户自己处理）
-        return 'assets/characters/pikaqiu.gif'
+        """获取默认角色路径 (使用 importlib.resources)"""
+        try:
+            # 直接从'video_progress_pkg'包中寻找资源文件路径
+            # 这是最健壮的方式，无论包如何安装都能工作
+            resource_path = files('video_progress_pkg').joinpath(
+                'assets', 'characters', 'pikaqiu.gif')
+            return str(resource_path)
+        except (ImportError, AttributeError, FileNotFoundError):
+            # 如果上面的方法因某种原因失败，提供一个最终的备用方案
+            print("⚠️ 无法通过 importlib.resources 定位资源文件，将使用相对路径。")
+            return 'assets/characters/pikaqiu.gif'
 
     def _load_character(self) -> List[Tuple[np.ndarray, np.ndarray]]:
         """加载角色GIF的所有帧，包含透明遮罩"""
