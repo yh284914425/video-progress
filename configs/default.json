@@ -1,6 +1,6 @@
 {
-  "input_video": "assets/samples/KRITIKAQUEEN2-1956650788194783326-01.mp4",
-  "output_video": "output/videos/KRITIKAQUEEN2-1956650788194783326-01.mp4",
+  "input_video": "src/video_progress_pkg/assets/samples/KRITIKAQUEEN2-1956650788194783326-01.mp4",
+  "output_video": "output/videos/default_demo.mp4",
   "bar_height": 40,
   "bar_color": [
     0,
@@ -14,7 +14,7 @@
   ],
   "position": "bottom",
   "margin": 25,
-  "character_path": "assets/characters/pikaqiu.gif",
+  "character_path": "src/video_progress_pkg/assets/characters/pikaqiu.gif",
   "character_size": [
     60,
     60

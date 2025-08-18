@@ -1,6 +1,6 @@
 {
-  "input_video": "",
-  "output_video": "",
+  "input_video": "src/video_progress_pkg/assets/samples/KRITIKAQUEEN2-1956650788194783326-01.mp4",
+  "output_video": "output/videos/fancy_demo.mp4",
   
   "bar_height": 50,
   "bar_color": [255, 100, 0],
@@ -8,7 +8,7 @@
   "position": "bottom",
   "margin": 30,
   
-  "character_path": "assets/characters/panda_running.gif",
+  "character_path": "src/video_progress_pkg/assets/characters/panda_running.gif",
   "character_size": [90, 90],
   "character_offset_x": 5,
   "character_offset_y": -10,

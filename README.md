@@ -268,9 +268,6 @@ source .venv/bin/activate
 # -e 表示 "editable" (可编辑)
 # /Users/sheng/Desktop/code/video-progress 是你这个包的存放路径
 pip install -e /Users/sheng/Desktop/code/video-progress
-
-# 如果需要包含音频处理功能，可以安装可选依赖
-pip install -e /Users/sheng/Desktop/code/video-progress[audio]
 ```
 
 ### 第三步：在新项目代码中使用

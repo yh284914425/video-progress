@@ -290,26 +290,16 @@ name = "video-progress-pkg"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "moviepy" },
     { name = "numpy" },
     { name = "opencv-python" },
     { name = "pillow" },
 ]
 
-[package.optional-dependencies]
-audio = [
-    { name = "moviepy" },
-]
-full = [
-    { name = "moviepy" },
-]
-
 [package.metadata]
 requires-dist = [
-    { name = "importlib-resources", marker = "python_full_version < '3.9'", specifier = ">=1.3.0" },
-    { name = "moviepy", marker = "extra == 'audio'", specifier = ">=2.1.0" },
-    { name = "moviepy", marker = "extra == 'full'", specifier = ">=2.1.0" },
-    { name = "numpy", specifier = ">=1.21.0,<2.0.0" },
+    { name = "moviepy", specifier = ">=2.1.0" },
+    { name = "numpy", specifier = ">=1.21.0" },
     { name = "opencv-python", specifier = ">=4.8.0" },
     { name = "pillow", specifier = ">=10.0.0" },
 ]
-provides-extras = ["audio", "full"]

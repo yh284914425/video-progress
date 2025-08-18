@@ -17,11 +17,7 @@ from PIL import Image, ImageSequence
 import tempfile
 
 # 用于资源文件路径处理
-try:
-    from importlib.resources import files
-except ImportError:
-    # Python < 3.9 fallback
-    from importlib_resources import files
+from importlib.resources import files
 
 # moviepy作为可选依赖
 try:
