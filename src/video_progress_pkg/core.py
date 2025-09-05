@@ -19,16 +19,15 @@ import tempfile
 # 用于资源文件路径处理
 from importlib.resources import files
 
-# moviepy作为可选依赖
-try:
-    from moviepy import VideoFileClip, ImageSequenceClip
-    MOVIEPY_AVAILABLE = True
-except ImportError:
-    MOVIEPY_AVAILABLE = False
-    print("⚠️  moviepy未安装，将使用OpenCV模式（无音频）")
+# moviepy作为必需依赖
+from moviepy import VideoFileClip, ImageSequenceClip
 
 # 抑制OpenCV的FFmpeg警告信息
 os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'protocol_whitelist;file,rtp,udp'
+
+# 常量定义
+LIGHTNING_UPDATE_INTERVAL = 15  # 电光特效更新间隔（帧）
+PARTICLE_LIFE_DECAY = 1  # 粒子生命值递减
 
 
 class VideoProgressBar:
@@ -78,12 +77,25 @@ class VideoProgressBar:
         self.text_position = config.get('text_position', 'right')  # left/right/center
         self.text_offset_x = config.get('text_offset_x', 15)
         self.text_offset_y = config.get('text_offset_y', 0)
+
+        # 文字描边配置
+        self.text_outline = config.get('text_outline', True)
+        self.text_outline_color = tuple(config.get('text_outline_color', [0, 0, 0]))
+        self.text_outline_thickness = config.get('text_outline_thickness', 2)
         
         # 进度条样式配置
         self.border_thickness = config.get('border_thickness', 3)
         self.border_color = tuple(config.get('border_color', [255, 255, 255]))
         self.gradient_enabled = config.get('gradient_enabled', True)
         self.glow_enabled = config.get('glow_enabled', True)
+
+        # 多色渐变配置
+        self.gradient_type = config.get('gradient_type', 'multi')  # linear, multi
+        self.gradient_colors = config.get('gradient_colors', [
+            [0, 255, 255],    # 起始色（青色）
+            [0, 200, 255],    # 中间色
+            [0, 150, 255]     # 结束色（蓝色）
+        ])
         
         # 内部变量
         self.frame_count = 0
@@ -177,7 +189,7 @@ class VideoProgressBar:
         if not self.enable_lightning:
             return
             
-        if self.frame_count % 15 == 0 and np.random.random() > (1 - self.lightning_chance):
+        if self.frame_count % LIGHTNING_UPDATE_INTERVAL == 0 and np.random.random() > (1 - self.lightning_chance):
             lightning = {
                 'x': char_x + np.random.randint(-20, 20),
                 'y': char_y + np.random.randint(-10, 10),
@@ -188,7 +200,7 @@ class VideoProgressBar:
         
         self.lightning_particles = [p for p in self.lightning_particles if p['life'] > 0]
         for particle in self.lightning_particles:
-            particle['life'] -= 1
+            particle['life'] -= PARTICLE_LIFE_DECAY
 
     def _draw_lightning_effects(self, frame: np.ndarray):
         """绘制电光特效"""
@@ -222,7 +234,7 @@ class VideoProgressBar:
         
         self.trail_particles = [p for p in self.trail_particles if p['life'] > 0]
         for particle in self.trail_particles:
-            particle['life'] -= 1
+            particle['life'] -= PARTICLE_LIFE_DECAY
             particle['x'] += particle['drift_x']
             particle['y'] += particle['drift_y']
 
@@ -253,25 +265,32 @@ class VideoProgressBar:
         
         # 绘制边框
         if self.border_thickness > 0:
-            cv2.rectangle(frame_copy, 
-                         (bar_x - self.border_thickness, bar_y - self.border_thickness), 
+            cv2.rectangle(frame_copy,
+                         (bar_x - self.border_thickness, bar_y - self.border_thickness),
                          (bar_x + bar_width + self.border_thickness, bar_y + self.bar_height + self.border_thickness),
                          self.border_color, self.border_thickness)
-        
+
         # 绘制进度条背景
-        cv2.rectangle(frame_copy, (bar_x, bar_y), 
+        cv2.rectangle(frame_copy, (bar_x, bar_y),
                      (bar_x + bar_width, bar_y + self.bar_height),
                      self.background_color, -1)
         
         # 绘制进度
         progress_width = int(bar_width * progress)
         if progress_width > 0:
-            if self.gradient_enabled:
-                # 渐变进度条
+            if self.gradient_enabled and self.gradient_type == 'multi':
+                # 多色渐变进度条
+                for i in range(progress_width):
+                    ratio = i / progress_width if progress_width > 0 else 0
+                    color = self._get_gradient_color(ratio)
+                    cv2.line(frame_copy, (bar_x + i, bar_y),
+                            (bar_x + i, bar_y + self.bar_height), color, 1)
+            elif self.gradient_enabled:
+                # 单色渐变进度条
                 for i in range(progress_width):
                     ratio = i / progress_width if progress_width > 0 else 0
                     color = tuple(int(c * (0.6 + 0.4 * ratio)) for c in self.bar_color)
-                    cv2.line(frame_copy, (bar_x + i, bar_y), 
+                    cv2.line(frame_copy, (bar_x + i, bar_y),
                             (bar_x + i, bar_y + self.bar_height), color, 1)
             else:
                 # 纯色进度条
@@ -344,12 +363,23 @@ class VideoProgressBar:
         
         text_y = bar_y + (self.bar_height + text_size_info[1]) // 2 + self.text_offset_y
         
-        # 文字阴影
-        for offset in [(2, 2), (-2, 2), (2, -2), (-2, -2)]:
-            cv2.putText(frame_copy, progress_text, 
-                       (text_x + offset[0], text_y + offset[1]),
-                       cv2.FONT_HERSHEY_SIMPLEX, self.text_size, (0, 0, 0), 3)
-        
+        # 文字描边效果
+        if self.text_outline:
+            # 绘制描边（多方向偏移）
+            outline_offsets = []
+            thickness = self.text_outline_thickness
+            for dx in range(-thickness, thickness + 1):
+                for dy in range(-thickness, thickness + 1):
+                    if dx != 0 or dy != 0:  # 排除中心点
+                        outline_offsets.append((dx, dy))
+
+            # 绘制所有描边
+            for offset in outline_offsets:
+                cv2.putText(frame_copy, progress_text,
+                           (text_x + offset[0], text_y + offset[1]),
+                           cv2.FONT_HERSHEY_SIMPLEX, self.text_size,
+                           self.text_outline_color, 2)
+
         # 主文字
         cv2.putText(frame_copy, progress_text, (text_x, text_y),
                    cv2.FONT_HERSHEY_SIMPLEX, self.text_size, self.text_color, 2)
@@ -388,124 +418,108 @@ class VideoProgressBar:
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
         
-        # 检查是否可以使用moviepy
-        if not MOVIEPY_AVAILABLE:
-            print("📺 使用OpenCV模式（无音频）")
-            return self._process_video_opencv_fallback(input_video, output_video)
-        
-        try:
-            # 使用moviepy加载视频并保留音频
-            print("🎬 正在加载视频（包含音频）...")
-            video_clip = VideoFileClip(input_video)
+        # 使用moviepy加载视频并保留音频
+        print("🎬 正在加载视频（包含音频）...")
+        video_clip = VideoFileClip(input_video)
+
+        fps = video_clip.fps
+        width, height = video_clip.size
+        duration = video_clip.duration
+        total_frames = int(fps * duration)
+
+        print(f"📊 视频信息:")
+        print(f"  分辨率: {width}x{height}")
+        print(f"  帧率: {fps:.1f} FPS")
+        print(f"  时长: {duration:.2f} 秒")
+        print(f"  总帧数: {total_frames}")
+        print(f"  角色动画帧数: {self.total_frames}")
+        print(f"  音频: {'✅ 包含' if video_clip.audio else '❌ 无音频'}")
+
+        print("🎮 正在处理视频帧...")
             
-            fps = video_clip.fps
-            width, height = video_clip.size
-            duration = video_clip.duration
-            total_frames = int(fps * duration)
-            
-            print(f"📊 视频信息:")
-            print(f"  分辨率: {width}x{height}")
-            print(f"  帧率: {fps:.1f} FPS")
-            print(f"  时长: {duration:.2f} 秒")
-            print(f"  总帧数: {total_frames}")
-            print(f"  角色动画帧数: {self.total_frames}")
-            print(f"  音频: {'✅ 包含' if video_clip.audio else '❌ 无音频'}")
-            
-            print("🎮 正在处理视频帧...")
-            
-            def process_frame(get_frame, t):
-                """处理单个帧的函数"""
-                frame = get_frame(t)
-                # MoviePy 2.x 直接返回uint8格式(0-255)，无需乘以255
-                if frame.dtype == np.float64 or frame.dtype == np.float32:
-                    # 如果是浮点数(0-1)，转换为uint8
-                    frame_bgr = cv2.cvtColor((frame * 255).astype(np.uint8), cv2.COLOR_RGB2BGR)
-                else:
-                    # 如果已经是uint8(0-255)，直接转换
-                    frame_bgr = cv2.cvtColor(frame.astype(np.uint8), cv2.COLOR_RGB2BGR)
-                
-                # 计算进度
-                progress = t / duration if duration > 0 else 0
-                
-                # 添加进度条
-                frame_with_progress = self._draw_progress_bar(frame_bgr, progress, width, height)
-                
-                # 转换回RGB给moviepy，MoviePy 2.x 期望uint8格式
-                frame_rgb = cv2.cvtColor(frame_with_progress, cv2.COLOR_BGR2RGB)
-                return frame_rgb.astype(np.uint8)
-            
-            # 创建新的视频剪辑，应用进度条处理 (MoviePy 2.x API)
-            processed_clip = video_clip.transform(process_frame)
-            
-            # 保留原始音频 (MoviePy 2.x API)
-            if video_clip.audio:
-                processed_clip = processed_clip.with_audio(video_clip.audio)
-                print("🔊 保留原始音频")
-            
-            print("💾 正在写入最终视频...")
-            
-            # 写入视频，并指定高质量参数 (MoviePy 2.x API)
-            processed_clip.write_videofile(
-                output_video,
-                fps=fps,
-                codec='libx264',      # 使用高质量和兼容性好的H.264编码器
-                bitrate='10000k',     # 设置一个较高的码率 (例如 10000 kbps)。原视频码率越高，这里可以设得越高。
-                preset='medium',      # 'slow'或'veryslow'可以获得更高压缩率（同等码率下质量更好），但耗时更长。'medium'是很好的平衡点。
-                threads=4,            # 使用多个CPU核心来加速编码
-                logger=None           # MoviePy 2.x: 使用logger代替verbose参数
-            )
-            
-            # 清理资源
-            processed_clip.close()
-            video_clip.close()
-            
-            print(f"🎉 视频处理完成! 输出文件: {output_video}")
-            
-        except Exception as e:
-            print(f"❌ 使用moviepy处理失败: {e}")
-            print("🔄 降级到OpenCV处理（无音频）...")
-            return self._process_video_opencv_fallback(input_video, output_video)
-        
+        def process_frame(get_frame, t):
+            """处理单个帧的函数"""
+            frame = get_frame(t)
+            # MoviePy 2.x 直接返回uint8格式(0-255)，无需乘以255
+            if frame.dtype == np.float64 or frame.dtype == np.float32:
+                # 如果是浮点数(0-1)，转换为uint8
+                frame_bgr = cv2.cvtColor((frame * 255).astype(np.uint8), cv2.COLOR_RGB2BGR)
+            else:
+                # 如果已经是uint8(0-255)，直接转换
+                frame_bgr = cv2.cvtColor(frame.astype(np.uint8), cv2.COLOR_RGB2BGR)
+
+            # 计算进度
+            progress = t / duration if duration > 0 else 0
+
+            # 添加进度条
+            frame_with_progress = self._draw_progress_bar(frame_bgr, progress, width, height)
+
+            # 转换回RGB给moviepy，MoviePy 2.x 期望uint8格式
+            frame_rgb = cv2.cvtColor(frame_with_progress, cv2.COLOR_BGR2RGB)
+            return frame_rgb.astype(np.uint8)
+
+        # 创建新的视频剪辑，应用进度条处理 (MoviePy 2.x API)
+        processed_clip = video_clip.transform(process_frame)
+
+        # 保留原始音频 (MoviePy 2.x API)
+        if video_clip.audio:
+            processed_clip = processed_clip.with_audio(video_clip.audio)
+            print("🔊 保留原始音频")
+
+        print("💾 正在写入最终视频...")
+
+        # 写入视频，并指定高质量参数 (MoviePy 2.x API)
+        processed_clip.write_videofile(
+            output_video,
+            fps=fps,
+            codec='libx264',      # 使用高质量和兼容性好的H.264编码器
+            bitrate='10000k',     # 设置一个较高的码率 (例如 10000 kbps)。原视频码率越高，这里可以设得越高。
+            preset='medium',      # 'slow'或'veryslow'可以获得更高压缩率（同等码率下质量更好），但耗时更长。'medium'是很好的平衡点。
+            threads=4,            # 使用多个CPU核心来加速编码
+            logger=None           # MoviePy 2.x: 使用logger代替verbose参数
+        )
+
+        # 清理资源
+        processed_clip.close()
+        video_clip.close()
+
+        print(f"🎉 视频处理完成! 输出文件: {output_video}")
+
         return output_video
-    
-    def _process_video_opencv_fallback(self, input_video: str, output_video: str) -> str:
-        """OpenCV降级处理（无音频，用作备选）"""
-        cap = cv2.VideoCapture(input_video)
-        if not cap.isOpened():
-            raise ValueError(f"无法打开视频文件: {input_video}")
-        
-        fps = int(cap.get(cv2.CAP_PROP_FPS))
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
-        print(f"⚠️  降级模式 - 无音频输出")
-        
-        # 简化的编码器选择
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
-        
-        if not out.isOpened():
-            raise ValueError("无法创建输出视频文件")
-        
-        frame_count = 0
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            progress = frame_count / total_frames
-            frame_with_progress = self._draw_progress_bar(frame, progress, width, height)
-            out.write(frame_with_progress)
-            
-            frame_count += 1
-            
-            if frame_count % (fps * 2) == 0:
-                print(f"📊 处理进度: {progress*100:.1f}% ({frame_count}/{total_frames})")
-        
-        cap.release()
-        out.release()
-        return output_video
+
+    def _get_gradient_color(self, ratio):
+        """根据比例获取多色渐变中的颜色"""
+        if not self.gradient_colors or len(self.gradient_colors) < 2:
+            return self.bar_color
+
+        # 确保ratio在0-1范围内
+        ratio = max(0, min(1, ratio))
+
+        # 计算在哪两个颜色之间
+        num_colors = len(self.gradient_colors)
+        segment_size = 1.0 / (num_colors - 1)
+        segment_index = int(ratio / segment_size)
+
+        # 防止越界
+        if segment_index >= num_colors - 1:
+            return tuple(self.gradient_colors[-1])
+
+        # 计算在当前段内的位置
+        local_ratio = (ratio - segment_index * segment_size) / segment_size
+
+        # 获取当前段的起始和结束颜色
+        start_color = self.gradient_colors[segment_index]
+        end_color = self.gradient_colors[segment_index + 1]
+
+        # 线性插值计算颜色
+        interpolated_color = []
+        for i in range(3):  # BGR三个通道
+            start_val = start_color[i]
+            end_val = end_color[i]
+            interpolated_val = int(start_val + (end_val - start_val) * local_ratio)
+            interpolated_color.append(interpolated_val)
+
+        return tuple(interpolated_color)
 
 
 def load_config(config_path: str) -> Dict[str, Any]:

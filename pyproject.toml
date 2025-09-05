@@ -34,14 +34,10 @@ Documentation = "https://github.com/your-username/video-progress-pkg#readme"
 Repository = "https://github.com/your-username/video-progress-pkg.git"
 Issues = "https://github.com/your-username/video-progress-pkg/issues"
 
-[project.scripts]
-# CLI入口点
-video-progress = "video_progress_pkg.cli:main"
-
 [tool.setuptools]
 # 指定源代码位于src目录
 package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
-# 包含包内的资源文件
-"video_progress_pkg" = ["assets/**/*"]
+# 包含包内的资源文件（只包含角色GIF）
+"video_progress_pkg" = ["assets/characters/*"]

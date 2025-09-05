@@ -15,19 +15,14 @@
 
 ```
 video-progress/
-├── video_progress_pkg/      # 📦 Python包
-│   ├── __init__.py         # 包接口
-│   ├── core.py            # 核心功能
-│   ├── cli.py             # 命令行接口
-│   └── assets/            # 📦 包内资源
-│       ├── characters/    # 角色GIF
-│       └── samples/      # 示例视频
-├── configs/                # 🔧 配置文件（2个预设）
-│   ├── default.json       # 默认配置
-│   └── fancy.json         # 华丽效果
-├── examples/               # 📝 使用示例
-│   └── demo_usage.py      # 完整演示
+├── src/
+│   └── video_progress_pkg/  # 📦 Python包
+│       ├── __init__.py     # 包接口
+│       ├── core.py        # 核心功能
+│       └── assets/        # 📦 包内资源
+│           └── characters/ # 角色GIF（皮卡丘、熊猫）
 ├── output/                 # 📤 输出目录
+├── demo_usage.py          # 📝 完整使用演示
 ├── pyproject.toml         # 包配置
 └── README.md              # 完整文档
 ```
@@ -38,20 +33,17 @@ video-progress/
 ```bash
 # 安装包（开发模式）
 uv pip install -e .
-
-# 或完整安装（包含音频支持）
-uv pip install -e .[full]
 ```
 
 ### 2. 快速测试
 ```bash
 # 运行完整演示
-uv run python examples/demo_usage.py
+uv run python demo_usage.py
 ```
 
-### 3. 两种使用方式
+### 3. 使用方式
 
-#### 方式1：Python包API（推荐）
+#### Python包API
 ```python
 from video_progress_pkg import VideoProgressBar
 
@@ -59,50 +51,40 @@ from video_progress_pkg import VideoProgressBar
 processor = VideoProgressBar()
 output_path = processor.process_video("your_video.mp4")
 
-# 使用预设配置
-from video_progress_pkg import load_config
-config = load_config("configs/fancy.json")
-config["input_video"] = "your_video.mp4"
-processor = VideoProgressBar(config)
-output_path = processor.process_video(config["input_video"])
-```
+# 自定义配置
+custom_config = {
+    "character_size": [80, 80],
+    "bar_color": [255, 0, 0],  # 红色进度条
+    "enable_bounce": True,
+    "position": "top"
+}
+processor = VideoProgressBar(custom_config)
+output_path = processor.process_video("your_video.mp4")
 
-#### 方式2：命令行使用
-```bash
-# 使用默认配置
-video-progress your_video.mp4
-
-# 使用预设配置文件
-video-progress --config configs/fancy.json
-
-# 自定义参数
-video-progress video.mp4 --character assets/characters/panda_running.gif --size 80 80
+# 使用demo中的预设配置
+from demo_usage import add_progress_bar_to_video
+output_path = add_progress_bar_to_video("your_video.mp4", style="default")  # 或 "fancy"
 ```
 
 ### 4. 两种预设风格
-```bash
-# 默认风格（平衡效果，适合大多数场景）
-video-progress --config configs/default.json
+```python
+# 使用demo中的预设配置
+from demo_usage import add_progress_bar_to_video
 
-# 华丽风格（丰富特效，适合娱乐视频）
-video-progress --config configs/fancy.json
+# 默认风格（青色主题，皮卡丘，适中特效）
+output_path = add_progress_bar_to_video("input.mp4", "output_default.mp4", "default")
+
+# 华丽风格（橙色主题，熊猫，丰富特效）
+output_path = add_progress_bar_to_video("input.mp4", "output_fancy.mp4", "fancy")
 ```
 
 ## ⚙️ 灵活配置
 
-### 快速参数调整
-- `--character` 角色GIF路径
-- `--size W H` 角色大小（宽 高）
-- `--position top/bottom` 进度条位置
-- `--color B G R` 进度条颜色（BGR格式）
-- `--offset X Y` 角色偏移（X Y像素）
-- `--no-effects` 禁用所有特效
+### 配置参数说明
 
-### 配置文件说明
-
-现有两个预设配置：
-- **default.json** - 默认配置，青色主题，适中特效  
-- **fancy.json** - 华丽风格，橙色主题，丰富特效
+现有两个预设风格（在demo_usage.py中定义）：
+- **default** - 默认配置，青色主题，皮卡丘，适中特效
+- **fancy** - 华丽风格，橙色主题，熊猫，丰富特效
 
 ```json
 {
@@ -160,32 +142,53 @@ video-progress --config configs/fancy.json
 ## 📝 使用示例
 
 ### 示例1: 大号熊猫，顶部位置
-```bash
-python video_progress.py video.mp4 \
-  --character assets/characters/panda_running.gif \
-  --size 100 100 \
-  --position top \
-  --offset 0 10
+```python
+from video_progress_pkg import VideoProgressBar
+
+config = {
+    "character_path": "assets/characters/panda_running.gif",
+    "character_size": [100, 100],
+    "position": "top",
+    "character_offset_x": 0,
+    "character_offset_y": 10
+}
+processor = VideoProgressBar(config)
+output_path = processor.process_video("video.mp4")
 ```
 
 ### 示例2: 蓝色主题，无特效
-```bash
-python video_progress.py video.mp4 \
-  --color 255 0 0 \
-  --no-effects
+```python
+from video_progress_pkg import VideoProgressBar
+
+config = {
+    "bar_color": [255, 0, 0],  # 蓝色 (BGR格式)
+    "enable_lightning": False,
+    "enable_particles": False,
+    "enable_bounce": False
+}
+processor = VideoProgressBar(config)
+output_path = processor.process_video("video.mp4")
 ```
 
-### 示例3: 使用配置文件
-```bash
-# 1. 使用预设配置
-video-progress --config configs/fancy.json
+### 示例3: 使用预设风格
+```python
+from demo_usage import add_progress_bar_to_video
 
-# 2. 或者复制并修改配置文件
-cp configs/default.json configs/my_theme.json
-# 编辑 my_theme.json 修改颜色、大小等
+# 1. 使用默认风格
+output_path = add_progress_bar_to_video("video.mp4", style="default")
 
-# 3. 使用自定义配置
-video-progress --config configs/my_theme.json
+# 2. 使用华丽风格
+output_path = add_progress_bar_to_video("video.mp4", style="fancy")
+
+# 3. 自定义配置（基于demo中的配置修改）
+from video_progress_pkg import VideoProgressBar
+config = {
+    "character_size": [80, 80],  # 修改角色大小
+    "bar_color": [0, 255, 0],    # 修改为绿色
+    "enable_bounce": True
+}
+processor = VideoProgressBar(config)
+output_path = processor.process_video("video.mp4")
 ```
 
 ## 🔧 高级定制
@@ -226,11 +229,11 @@ video-progress --config configs/my_theme.json
 ## 🛠️ 故障排除
 
 **角色显示有黑边**：确保GIF有透明背景
-**角色太大/太小**：调整 `character_size` 参数  
+**角色太大/太小**：调整 `character_size` 参数
 **位置不对**：使用 `character_offset_x/y` 微调
-**特效太多**：使用 `--no-effects` 或在配置中关闭
+**特效太多**：在配置中设置 `enable_lightning=False`, `enable_particles=False` 等
 **VSCode无法预览生成的视频**：已优化编码器选择，应该可以正常预览
-**生成的视频没有声音**：需要安装moviepy (`uv add moviepy`)，否则使用无音频模式
+**生成的视频没有声音**：moviepy是必需依赖，确保已正确安装
 
 ## 🔗 在其他项目中使用
 
