@@ -6,6 +6,27 @@
 
 from video_progress_pkg import VideoProgressBar
 import os
+from importlib.resources import files
+
+def get_character_path(character_name):
+    """获取角色文件路径，支持包安装后的使用"""
+    try:
+        # 使用importlib.resources获取包内资源路径
+        resource_path = files('video_progress_pkg').joinpath('assets', 'characters', f'{character_name}.gif')
+        if resource_path.exists():
+            return str(resource_path)
+        else:
+            raise FileNotFoundError(f"角色文件不存在: {resource_path}")
+    except (ImportError, AttributeError, FileNotFoundError):
+        # 开发环境备用方案
+        dev_path = f"src/video_progress_pkg/assets/characters/{character_name}.gif"
+        if os.path.exists(dev_path):
+            print(f"⚠️ 使用开发环境路径: {dev_path}")
+            return dev_path
+        else:
+            # 如果都找不到，返回None，让VideoProgressBar使用默认角色
+            print(f"⚠️ 找不到角色文件 {character_name}.gif，将使用默认角色")
+            return None
 
 def check_sample_video():
     """检查测试视频是否存在"""
@@ -57,7 +78,7 @@ def add_progress_bar_to_video(video_path, output_path=None, style="default"):
             "margin": 0,                         # 进度条边距（像素，0=贴边）
 
             # 角色设置
-            "character_path": "src/video_progress_pkg/assets/characters/pikaqiu.gif",  # 角色GIF路径
+            "character_path": get_character_path("pikaqiu") or "default",  # 角色GIF路径，如果找不到使用默认
             "character_size": [60, 60],          # 角色大小 [宽, 高]（像素）
             "character_offset_x": 0,             # 角色X轴偏移（像素，正值向右）
             "character_offset_y": -5,            # 角色Y轴偏移（像素，负值向上）
@@ -117,7 +138,7 @@ def add_progress_bar_to_video(video_path, output_path=None, style="default"):
             "margin": 0,                         # 进度条边距（像素，0=贴边）
 
             # 角色设置
-            "character_path": "src/video_progress_pkg/assets/characters/panda_running.gif",  # 角色GIF路径
+            "character_path": get_character_path("panda_running") or "default",  # 角色GIF路径，如果找不到使用默认
             "character_size": [90, 90],          # 角色大小 [宽, 高]（像素）
             "character_offset_x": 5,             # 角色X轴偏移（像素，正值向右）
             "character_offset_y": -10,           # 角色Y轴偏移（像素，负值向上）

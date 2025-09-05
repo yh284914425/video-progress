@@ -26,13 +26,14 @@ dependencies = [
     "pillow>=10.0.0",
     "numpy>=1.21.0",
     "moviepy>=2.1.0",
+    "tqdm>=4.60.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-username/video-progress-pkg"
-Documentation = "https://github.com/your-username/video-progress-pkg#readme"
-Repository = "https://github.com/your-username/video-progress-pkg.git"
-Issues = "https://github.com/your-username/video-progress-pkg/issues"
+Homepage = "https://github.com/video-progress/video-progress-pkg"
+Documentation = "https://github.com/video-progress/video-progress-pkg#readme"
+Repository = "https://github.com/video-progress/video-progress-pkg.git"
+Issues = "https://github.com/video-progress/video-progress-pkg/issues"
 
 [tool.setuptools]
 # 指定源代码位于src目录
